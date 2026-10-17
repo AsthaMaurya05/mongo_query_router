@@ -1,0 +1,8 @@
+pymongo==4.19.0
+fastapi==0.143.2
+uvicorn==0.54.0
+groq==1.7.0
+pydantic==2.14.1
+pytest==9.1.1
+faker==40.43.0
+python-dotenv
