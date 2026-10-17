@@ -1,254 +1,198 @@
 # Mongo Query Router
 
-A natural-language analytics API that converts user questions into structured MongoDB aggregation queries and returns readable analytical results through a FastAPI-powered dashboard.
+Mongo Query Router is a FastAPI application that turns natural-language business questions into validated MongoDB aggregation pipelines. It routes each question to an analytics pipeline, executes the query, and returns both structured results and a readable summary in an interactive dashboard.
 
-## Overview
+## Features
 
-Mongo Query Router allows users to ask questions about products, customers, orders, revenue, inventory, and reviews in plain English. Instead of manually writing MongoDB aggregation pipelines, the application routes each question to an appropriate analytics pipeline and executes it against MongoDB.
+- Natural-language routing for common shop analytics questions
+- MongoDB aggregation pipelines for revenue, customers, orders, inventory, ratings, and prices
+- Groq-powered query routing and result summarization
+- Request validation and MongoDB collection validators
+- Interactive dashboard and FastAPI OpenAPI documentation
+- Service-layer CRUD operations for users, products, orders, and reviews
+- Pipeline and index benchmarks with generated reports
+- Automated tests for routing, pipelines, validation, and services
 
-The project combines natural-language query routing, database aggregation, result summarization, automated testing, and an interactive web dashboard.
+## Technology stack
 
-## Key Features
-
-- **Natural-language query routing:** Maps user questions to the appropriate analytics pipeline.
-- **MongoDB aggregation:** Performs analytical operations directly on MongoDB collections.
-- **Revenue analytics:** Analyzes category revenue, monthly trends, and customer spending.
-- **Inventory monitoring:** Identifies products with stock below a specified threshold.
-- **Product review analytics:** Ranks products by average rating with a minimum review count.
-- **Price distribution:** Groups products into price bands.
-- **Dashboard summary:** Combines key revenue, order, and product metrics.
-- **Interactive web interface:** Displays answers, selected pipelines, parameters, returned rows, and raw results.
-- **Automated testing:** Includes tests for query routing, pipeline selection, parameters, and application behavior.
-
-## Technology Stack
-
-- **Language:** Python
-- **Backend API:** FastAPI
-- **Database:** MongoDB
-- **Database Driver:** PyMongo
-- **Environment Configuration:** python-dotenv
-- **Testing:** pytest
-- **Frontend:** HTML, CSS, JavaScript
-
-## Architecture
-
-```text
-             User Question
-                   |
-                   v
-        FastAPI Application
-                   |
-                   v
-          Query Router
-                   |
-                   v
-       Pipeline and Parameter
-              Selection
-                   |
-                   v
-       MongoDB Aggregation
-                   |
-                   v
-         Query Execution
-                   |
-                   v
-        Result Summarization
-                   |
-                   v
-         Dashboard Response
-```
-
-## Supported Analytics Pipelines
-
-| Pipeline | Purpose |
-|---|---|
-| `revenue_by_category` | Calculates revenue by product category |
-| `top_customers` | Identifies customers with the highest spending |
-| `monthly_revenue_trend` | Summarizes revenue by month |
-| `order_status_summary` | Summarizes orders by status |
-| `low_stock_alert` | Finds products below a stock threshold |
-| `product_ratings` | Ranks products using review ratings |
-| `price_band_distribution` | Analyzes product price ranges |
-| `dashboard_summary` | Provides an overview of important business metrics |
-
-The project also contains a private benchmark pipeline, `revenue_by_category_naive`, used for internal evaluation.
+- Python 3.10+
+- FastAPI and Uvicorn
+- MongoDB and PyMongo
+- Groq
+- Pydantic
+- pytest and Faker
 
 ## Prerequisites
 
-Install the following before running the application:
+Install the following before running the project:
 
-- Python 3.10 or a compatible Python version
-- MongoDB running locally or a reachable MongoDB instance
-- Git
-- pip
+- Python 3.10 or newer
+- A running MongoDB instance
+- A Groq API key
+- Git and pip
 
-## Installation and Setup
+## Installation
 
-### 1. Clone the repository
-
-```bash
-git clone <YOUR_GITHUB_REPOSITORY_URL>
-cd mongo-query-router
-```
-
-Replace the placeholder with your actual GitHub repository URL after creating the repository.
-
-### 2. Create a virtual environment
-
-**Windows PowerShell:**
+Clone the repository and create a virtual environment:
 
 ```powershell
-python -m venv venv
-.\venv\Scripts\Activate.ps1
+git clone https://github.com/AsthaMaurya05/mongo_query_router.git
+cd mongo_query_router
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 ```
 
-### 3. Install dependencies
-
-If the project contains a `requirements.txt` file:
+Install the pinned project dependencies:
 
 ```powershell
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
 
-Otherwise, install the required packages:
-
-```powershell
-pip install fastapi uvicorn pymongo python-dotenv pytest
-```
-
-### 4. Configure environment variables
+## Configuration
 
 Create a `.env` file in the project root:
 
 ```dotenv
 MONGODB_URI=mongodb://localhost:27017
 API_DB_NAME=mongo_query_router_api_dev
+GROQ_API_KEY=your-groq-api-key
+GROQ_MODEL=llama-3.1-8b-instant
 ```
 
-Adjust the MongoDB URI if you use a remote database.
+`MONGODB_URI` defaults to `mongodb://localhost:27017`. The API uses `API_DB_NAME` (default: `mongo_query_router_api_dev`) for its demo data. `GROQ_MODEL` is optional; the application uses its configured default when it is omitted.
 
-**Security:** Never commit `.env` or publish database credentials. Keep `.env` excluded through `.gitignore`.
+Never commit `.env`, API keys, database credentials, or private keys. The repository `.gitignore` excludes local environment files and Python build/test artifacts.
 
-### 5. Start MongoDB
+## Load demo data
 
-Ensure your MongoDB server is running and accessible through the configured connection string.
-
-### 6. Start the API
+Make sure MongoDB is running, then seed the dedicated API database:
 
 ```powershell
-uvicorn app.api.main:app --reload
+python seed_demo.py
 ```
 
-Open the dashboard at:
+The seed script refuses to modify a non-empty database. An equivalent guarded script is available at `seed_demo_data.py`.
 
-http://127.0.0.1:8000
+## Run the API
 
-FastAPI's interactive API documentation is available at:
+Start the development server from the repository root:
 
-http://127.0.0.1:8000/docs
+```powershell
+python -m uvicorn app.api.main:app --reload
+```
 
-## Example Questions
+Open the dashboard at <http://127.0.0.1:8000>. The interactive API documentation is available at <http://127.0.0.1:8000/docs>.
 
-Try these questions in the dashboard:
+### API endpoints
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `GET` | `/` | Serves the analytics dashboard |
+| `GET` | `/health` | Checks API and MongoDB availability |
+| `POST` | `/api/query` | Routes and executes an analytics question |
+
+Example request:
+
+```powershell
+Invoke-RestMethod `
+  -Method Post `
+  -Uri http://127.0.0.1:8000/api/query `
+  -ContentType "application/json" `
+  -Body '{"question":"Show the top 5 product categories by revenue from September 1 to October 1, 2026."}'
+```
+
+## Supported analytics
+
+| Pipeline | Purpose |
+| --- | --- |
+| `revenue_by_category` | Calculates revenue by product category |
+| `top_customers` | Finds customers with the highest spending |
+| `monthly_revenue_trend` | Summarizes revenue by month |
+| `order_status_summary` | Summarizes orders by status |
+| `low_stock_alert` | Finds products below a stock threshold |
+| `product_ratings` | Ranks products by average rating |
+| `price_band_distribution` | Groups products into price bands |
+| `dashboard_summary` | Combines key business metrics |
+
+The private `revenue_by_category_naive` pipeline is retained for benchmark comparisons and is not exposed to normal AI routing.
+
+Date-range filters use an inclusive start date and an exclusive end date. Revenue analytics count delivered orders; order-status analytics can include other statuses.
+
+Example questions:
 
 ```text
 Show the top 5 product categories by revenue from September 1 to October 1, 2026.
-
 Who are the top 5 customers by spending between September 1 and October 1, 2026?
-
 Show products with stock below 10.
-
 Rank products by average rating with at least 2 reviews.
-
 Show the distribution of product prices.
-
 Show monthly revenue from September 1, 2026 to November 1, 2026.
-
 Give me a dashboard summary from September 1, 2026 to October 1, 2026.
-
 Summarize order statuses from September 1 to October 1, 2026.
 ```
 
-Date-range queries use an inclusive start date and an exclusive end date. Revenue analytics count delivered orders, while order-status analytics can include other order statuses.
+## Scripts and benchmarks
 
-## API Endpoints
+Run the CRUD service-layer demonstration against a temporary database:
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/` | Serves the dashboard |
-| `GET` | `/health` | Checks application health |
-| `POST` | `/api/query` | Processes a natural-language analytics question |
+```powershell
+python -m scripts.demo_crud
+```
 
-The query endpoint accepts a question through the application's request schema and returns the analytical response. Refer to `/docs` for the exact request and response models.
+The script creates validators and indexes, demonstrates insert/read/update/delete operations, and drops its temporary database when it finishes. It does not use `shop_db`.
 
-## Running Tests
+Other useful scripts include:
 
-Run the automated test suite from the project root:
+| Script | Purpose |
+| --- | --- |
+| `scripts.setup_collections` | Creates validated `shop_db` collections |
+| `scripts.seed_data` | Seeds the larger service-layer dataset |
+| `scripts.create_indexes` | Creates application indexes |
+| `scripts.benchmark_category_pipelines` | Compares category-revenue pipelines |
+| `scripts.benchmark_indexes` | Measures query plans and index impact |
+| `scripts.collect_report_facts` | Collects reproducible, read-only project facts |
+
+Benchmark results are stored in [docs/category_pipeline_benchmark.md](docs/category_pipeline_benchmark.md) and [docs/index_benchmark_results.md](docs/index_benchmark_results.md).
+
+## Tests
+
+Run the complete test suite:
 
 ```powershell
 python -m pytest -q
 ```
 
-The current recorded test result is **76 passed**. Run the suite again after making changes to verify the current state.
+The test suite covers query routing, pipeline selection and parameters, schema validation, and service behavior. Test results can vary if the local environment or database fixtures change.
 
-## Database Collections
+## Database collections
 
-The demo database uses the following collections:
+The application works with these collections:
 
-- `orders` — order details, customer references, dates, statuses, and totals.
-- `products` — product information, prices, stock, and category references.
-- `categories` — product category information.
-- `users` — customer information.
-- `reviews` — product ratings and review data.
+- `orders`: order details, customer references, dates, statuses, totals, and item snapshots
+- `products`: product names, prices, stock, tags, and category references
+- `categories`: product categories
+- `users`: customer information
+- `reviews`: product ratings and review data
 
-The application uses `mongo_query_router_api_dev` as its default API database unless overridden by configuration.
-
-## Project Structure
+## Project structure
 
 ```text
 mongo-query-router/
-├── app/
-│   ├── api/
-│   │   └── main.py
-│   └── db.py
-├── tests/
-├── .env                  # Local configuration; do not commit
-├── .gitignore
-├── requirements.txt
-├── seed_demo_data.py
-└── README.md
+|-- app/
+|   |-- ai/              # Query routing and result summarization
+|   |-- api/             # FastAPI application and dashboard
+|   |-- pipelines/       # Analytics pipeline registry and definitions
+|   |-- schemas/         # MongoDB validators
+|   `-- services/        # CRUD service layer
+|-- docs/                # Benchmark reports and explain output
+|-- scripts/             # Setup, seed, benchmark, and demo utilities
+|-- tests/               # Automated tests and router evaluation helpers
+|-- requirements.txt
+|-- seed_demo.py
+|-- seed_demo_data.py
+`-- README
 ```
-
-This is a representative structure. Retain the actual filenames and folders present in your project when updating this section.
-
-## Git Safety
-
-Before pushing the project to GitHub, ensure that `.gitignore` excludes at least:
-
-```gitignore
-.env
-venv/
-.venv/
-__pycache__/
-*.py[cod]
-.pytest_cache/
-```
-
-Do not commit database credentials, private keys, virtual environments, or unrelated personal files.
-
-## Future Improvements
-
-- Add authentication and authorization.
-- Add query execution limits and request validation.
-- Improve handling of ambiguous natural-language questions.
-- Add structured logging and performance monitoring.
-- Expand analytics pipelines and evaluation coverage.
-- Deploy the API and dashboard to a production environment.
 
 ## License
 
 No license has been specified yet. Add a license before permitting others to reuse or distribute the project.
-
----
-
-**Mongo Query Router** — turning natural-language business questions into actionable MongoDB analytics.
